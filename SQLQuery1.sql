@@ -499,66 +499,71 @@ from Employees E
 full join Employees M --- n�itab nii left kui ka right join tulemust koos.
 on E.ManagerID = M.ID
 
---rida 412
---4 tund
---31.03.26
+-- rida 502
+-- 4 tund -- 31.03.2026
+select ISNULL('Sinu Nimi', 'No Manager') as Manager
 
---neil kellel ei ole ülemust, siis paneb neile No Manager teksti
-select E. Name as Employee, isnull(M. Name, 'No Manager') as Manager
+select coalesce(null, 'No Manager') as Manager
+
+--Neil kellel ei ole �lemust, siis paneb neile No Manager teksti
+select E.Name as Employee, isnull(M.Name, 'No Manager') as manager
 from Employees E
 left join Employees M
-on E. ManagerId = M. Id
---kui Expression on õige, siis paneb väärtuse, mida soovid või
---vastasel juhul paneb No Manager teksti
+on E.ManagerID = M.ID
+
+-- kui Expression on �ige, siis paneb v��rtuse, mida soovid v�i vastasel juhul paneb No manager teksti
 case when Expression Then '' else '' end
 
---teeme päringu, kus kasutame case-i
- --tuleb kasutada ka left join
-select E. Name as Employee, case when M. Name is null then 'No Manager'
-else M. Name end as Manager
+-- teeme p�ringu, kus kasutame case-i, tuleb kasutada ka left join
+select E.Name as Employee, case	when M.Name is NULL	Then 'No Manager'
+else M.Name end as Manager
 from Employees E
 left join Employees M
-on E. ManagerId = M. Id
+on E.ManagerID = M.ID
 
 --lisame tabelisse uued veerud
-alter table Employees 
+alter table Employees
 add MiddleName nvarchar(30)
 alter table Employees
-add LastName nvarchar(30);
+add Lastname nvarchar(30)
 
---muudame koodi employees
-CREATE TABLE Employees (
-    Id INT PRIMARY KEY,
-    FirstName NVARCHAR(50),
-    MiddleName NVARCHAR(50) NULL,
-    LastName NVARCHAR(50) NULL,
-    Gender NVARCHAR(10),
-    Salary INT,
-    DepartmentId INT NULL,
-    ManagerId INT NULL
-);
+--muudame veeru nime koodiga
+sp_rename 'Employees.MiddleName1', 'MiddleName'
+select * from Employees
 
-INSERT INTO Employees (Id, FirstName, MiddleName, LastName, Gender, Salary, DepartmentId, ManagerId)
-VALUES 
-(1, 'Tom', 'Nick', 'Jones', 'Male', 4000, 1, NULL),
-(2, 'Pam', NULL, 'Anderson', 'Female', 3000, 3, 1),
-(3, 'John', NULL, NULL, 'Male', 3500, 1, 1),
-(4, 'Sam', NULL, 'Smith', 'Male', 4500, 2, 2),
-(5, NULL, 'Todd', 'Someone', 'Male', 2800, 2, 2),
-(6, 'Ben', 'Ten', 'Sven', 'Male', 7000, 1, 2),
-(7, 'Sara', NULL, 'Connor', 'Female', 4800, 3, 3),
-(8, 'Valarie', 'Balerine', NULL, 'Female', 5500, 1, 3),
-(9, 'James', '007', 'Bond', 'Male', 6500, NULL, 3),
-(10, NULL, NULL, 'Crowe', 'Male', 8800, NULL, 4);
+update Employees
+set MiddleName = 'Nick', LastName = 'Jones' where id = 1
+update Employees
+set LastName = 'Anderson' where id = 2
+update Employees
+set LastName = 'Smith' where id = 4
+update Employees
+set MiddleName = 'Todd', FirstName = NULL, LastName = 'Someone' where id = 5
+update Employees
+set MiddleName = 'Ten', LastName = 'Sven' where id = 6
+update Employees
+set LastName = 'Connor' where id = 7
+update Employees
+set MiddleName = 'Balerine' where id = 8
+update Employees
+set MiddleName = '007', LastName = 'Bond' where id = 9
+update Employees
+set FirstName = NULL, MiddleName = NULL, LastName = 'Crowe' where id = 10
 
---igast reast võtab esimesena mitte nulli väärtuse ja paneb Name veergu
---kasutada coalesce
-select Id, coalesce (FirstName, MiddleName, LastName) as Name
+--igast reast v�tab esimesena mitte nulli v��rtuse ja panemb Name veergu kasutada coalesce
+select id, coalesce(FirstName, MiddleName, LastName) as Name --coalesce v�tab v��rtused j�rjest l�bi, kui 1 on NULL siis v�tab teise, kui see ka NULL, siis kolmas, kui k�ik NULL siis annab v��rtuse NULL
 from Employees
+
+create table IndianCustomers
+(
+ID int identity(1,1),
+Name nvarchar(25),
+Email nvarchar(25)
+)
 
 create table UKCustomers
 (
-Id int identity(1,1),
+ID int identity(1,1),
 Name nvarchar(25),
 Email nvarchar(25)
 )
@@ -574,23 +579,408 @@ values ('Ben', 'B@B.com'),
 select * from IndianCustomers
 select * from UKCustomers
 
---kasutate union all
---kahe tabeli andmete vaatamiseks
--- Valime andmed esimesest tabelist
-select Id, Name, Email from Indian Customers
-union all
-select Id, Name, Email from UKCustomers
+--kasutate union all kahe tabeli andmete vaatamiseks, n�itab m�lema tabeli read �hes tabelis
+select * from IndianCustomers
+Union all
+select * from UKCustomers
 
---korduvate väärtuste eemaldamiseks kasutame unionit
-select Id, Name, Email from Indian Customers
-union
-select Id, Name, Email from UKCustomers
+--korduvate v��rtuste eemaldamiseks kasutame union
+select * from IndianCustomers
+Union
+select * from UKCustomers
 
---kuidas tulemust sorteerida nime järgi
---kasutada union all-i
-select Id, Name, Email from Indian Customers
-union all
-select Id, Name, Email from UKCustomers
+--kuidas tulemust sorteerida nime j�rgi, kasutada union all-i
+select * from IndianCustomers
+Union all 
+select * from UKCustomers
 order by Name
 
+--stored procedure
+--salvestatud protseduurid on SQL'i koodid, mis on salvestatud andmebaasis ja mida saab
+--k�ivitada, et teha mingi kindel t�� �ra
+create procedure spGetEmployees
+as begin
+	select FirstName, Gender from Employees
+end
+
+--n��d saame kasutada spGetEmployees'i
+spGetEmployees
+exec spGetEmployees
+execute spGetEmployees -- k�ik annavad sama tulemuse
+
+---
+create proc spGetEmployeesByGenderAndDepartment
+@Gender nvarchar(10),
+@DepartmentId int
+as begin
+	select FirstName, Gender, DepartmentID from Employees
+	where Gender = @Gender and DepartmentId = @DepartmentId
+end
+
+--ilma @ parameetriteta annab errori
+spGetEmployeesByGenderAndDepartment 'male', 1
+--kuidas minna sp j�rjekorrast m��da --kirjuta v�lja parameetrid
+spGetEmployeesByGenderAndDepartment @DepartmentId = 1, @Gender = 'male'
+
+sp_helptext spGetEmployeesByGenderAndDepartment
+
+--muudame sp'd ja v�ti peale, et keegi teine peale teie ei saaks seda muuta.
+alter procedure spGetEmployeesByGenderAndDepartment
+@Gender nvarchar(10),
+@DepartmentId int
+with encryption -- paneb v�tme peale
+as begin
+	select FirstName, Gender, DepartmentID from Employees
+	where Gender = @Gender and DepartmentId = @DepartmentId
+end
+
+--
+create proc spGetEmployeeCountByGender
+@Gender nvarchar(10),
+--mis on output parameeter ja kuidas seda kasutada
+--on parameeter, mis v�imaldab meil salvestada protseduuri
+--sees tehtud arvutuse tulemuse ja kasutada seda v�ljaspool protseduuri
+@EmployeeCount int output
+as begin
+	select @EmployeeCount = count(Id) from Employees where Gender = @Gender
+end
+
+--annab tulemuse, kus loendab �ra n�uetele vastavad read, prindib tulemuse, mis on parameetris @EmployeeCount
+declare @TotalCount int
+exec spGetEmployeeCountByGender 'male', @TotalCount output -- output sama mis out
+if(@TotalCount = 0)
+	print '@TotalCount is null'
+else
+	print '@TotalCount is not null'
+print @TotalCount
+
+--n�itab �ra mitu rida vastab n�uetele
+declare @TotalCount int
+--out on parameeter, mis v�imaldab meil salvestada protseduuri
+execute spGetEmployeeCountByGender @EmployeeCount = @TotalCount out, @Gender = 'Male'
+print @TotalCount
+
+--sp sisu vaatamine
+sp_help spGetEmployeeCountByGender
+--tabeli info
+sp_help Employees
+--kui soovid sp teksti n�ha
+sp_helptext spGetEmployeeCountByGender
+
+--vaatame, millest s�ltub see sp
+sp_depends spGetEmployeeCountByGender
+--vaatame tabelit sp_depends'ga
+sp_depends Employees
+
+---
+create proc spGetNameById
+@Id int,
+@Name nvarchar(25) output
+as begin
+	select @Id = Id, @Name = FirstName from Employees
+end
+
+--tahame n�ha kogu tabelite ridade arvu, count kasutada
+create proc spGetRowCount
+@IdCount int output
+as begin
+	select @IdCount = COUNT(Id) from Employees
+end
+
+spGetRowCount
+
+declare @TotalEmployees int
+execute spGetRowCount @TotalEmployees out
+select @TotalEmployees as Eployees
+
+--mis id all on keegi nime j�rgi
+create proc spGetNameByID1
+@Id int,
+@FirstName nvarchar(30) output
+as begin
+	select @FirstName = FirstName from Employees where @Id = Id
+end
+
+--annab tulemuse, kus id 1 real on keegi koos nimega
+declare @FirstName nvarchar(30)
+exec spGetNameByID1 1, @FirstName out
+print 'Name of employee = ' + @Firstname
+
+---
+declare @FirstName nvarchar(30)
+exec spGetNameById 3, @FirstName output
+print 'Name of employee = ' + @FirstName
+-- ei anna tulemust, sest sp's on loogika viga. sest @ Id on parameeter, mis on m�eldud selleks,
+--et me saaksime sisestada id'd ja saada nime, aga sp's on loogika viga, sest see �ritab m��rata
+--@Id v��rtuseks Id veeru v��rtust, mis on vale
+
+--rida 718
+--tund 5 -- 07.04.26
+declare @FirstName nvarchar(30)
+exec spGetNameById 1, @FirstName out
+print 'Name of employee = ' + @FirstName
+
+sp_help spGetNamebyId
+
+create proc spGetNameById2
+@Id int
+as begin
+	return (select FirstName from Employees where Id = @Id)
+end
+
+declare @EmployeeName nvarchar(30)
+execute @EmployeeName = spGetNameById2 1
+print 'Name of the employee = ' + @EmployeeName
+
+alter proc spGetNameById2
+@Id int
+as begin
+	select FirstName from Employees where Id = @Id
+end
+--return annab ainult int t��pi v��rtuset, seega ei saa kasutada returni, et tagastada nime, mis
+--on nvarchar t��pi
+
+----sisseehitatud string funktsioonid
+-- see konventeerib ASCII t�he v��rtuse numbriks
+select ascii('A')
+-- kuvab A-t�hr
+select char(65)
+
+--prindime kogu t�hestiku v�lja A-st Z-ni
+--kasutame while ts�klit
+declare @x INT
+set @x = 65
+while @x <= ascii('Z')
+begin
+	print char(@x)
+	set @x = @x + 1
+end
+
+-- eemaldame t�hjad kohad sulgudes
+select ltrim('                              Hello')
+
+-- t�hikute eemaldamine s�nas
+select ltrim(FirstName) as FirstName, Middlename, Lastname
+from Employees
+
+--keerab kooloni sees olevad andmed vastupidiseks
+--vastavalt upper ja lower'ga saan muuta m�rkide suurust
+--reverse funktsioon keerab stringi tagurpidi
+select reverse(upper(ltrim(FirstName))) as FirstName, MiddleName,
+lower(Lastname), rtrim(ltrim(FirstName)) + ' ' + MiddleName + ' ' + 
+LastName as FullName from Employees
+
+
+--left, right, substring
+--left / right v�ta stringi vasakult / paremalt poolt neli esimest t�hte
+select left('ABCDEF', 4)
+select right('ABCDEF', 4)
+
+--kuvab @t�hem�rgi asetust
+select CHARINDEX('@', 'sara@aaa.com')
+
+--alates viiendast t�hem�rgist v�tab kaks t�hte
+select substring('leo@bbb.com', 5, 2)
+
+--- @-m�rgist kuvab kolm t�hem�rki. Viimase nr saab m��rata pikkust
+select substring('leo@bbb.com', charindex('@', 'leo@bbb.com') + 1, 3)
+
+---peale @-m�rki reguleerin t�hem�rkide pikkuse n�itamist
+select substring('leo@bbb.com', CHARINDEX('@', 'leo@bbb.com') + 2,
+len('leo@bbb.com') - CHARINDEX('@', 'leo@bbb.com'))
+
+--saame teada domeeninimed emalides, kasutame Person tabelit
+--ja substringi, len ja charindex
+select substring(Email, CHARINDEX('@', Email) + 1,
+len(Email) - charindex('@', Email)) as Domainname
+from Person
+
+
+alter table Employees
+add Email nvarchar(20)
+
+update Employees
+set Email = 'Tom@aaa.com' where Id = 1
+update Employees
+set Email = 'Pam@bbb.com' where Id = 2
+update Employees
+set Email = 'John@aaa.com' where Id = 3
+update Employees
+set Email = 'Sam@bbb.com' where Id = 4
+update Employees
+set Email = 'Todd@bbb.com' where Id = 5
+update Employees
+set Email = 'Ben@ccc.com' where Id = 6
+update Employees
+set Email = 'Sara@ccc.com' where Id = 7
+update Employees
+set Email = 'Valarie@aaa.com' where Id = 8
+update Employees
+set Email = 'James@bbb.com' where Id = 9
+update Employees
+set Email = 'Russel@bbb.com' where Id = 10
+
+--lisame *-m�rgi alates teatud kohast
+select FirstName, LastName,
+	substring(Email, 1, 2) + replicate('*', 5) +
+	--peale tesist t�hem�rki paneb viis t�rni
+	substring(Email, charindex('@', Email), len(Email)
+	- len(charindex('@', Email) + 1)) as MaskedEmail
+	--kuni@m�rgini paneb t�rnid ja siis j�tkab emaili n�itamist on
+	--d�naamiline, sest kui emaili pikkus on erinev, siis paneb
+	--vastavalt t�hed
+from Employees
+
+--kolm korda n�itab stringis olevat v��rtust
+select replicate ('Hello', 3)
+
+--kuidas sisestada t�hikut kahe nime vahele, kasutada funktsiooni
+select space(5)
+--v�tame tabeli Employees ja kuvame eesnimi ja perekonnanime vahele t�hikut
+select FirstName + space(1) + LastName as Fullname from Employees
+
+--PATINDEX
+--sama, mis charindex, aga patindex v�imaldab kasutada wildcardi
+--kasutame tabelit Employees ja leiame k�ik read, kus emaili l�pus on aaa.com
+select Email, patindex('%@aaa.com',Email) As Position from Employees
+where patindex('%@aaa.com',Email) > 0
+--leiame k�ik read, kus emaili l�pus on aaa.com v�i bbb.com
+
+
+--asendame emaili l�pus olevat domeeninimed, .com asemel .net'ga, kasutage replac'i
+select replace(Email, '.com', '.net') from Employees
+
+--soovin asendada peale esimest m�rki olevad t�hed viie t�rniga
+select Firstname, lastname, Email,
+stuff(Email, 2, 3, '*****') as StuffedEmail from Employees
+
+---ajaga seotud andmet��bid
+create table DateTest
+(c_time time,
+c_date date,
+c_smalldatetime smalldatetime,
+c_datetime datetime,
+c_datetime2 datetime2,
+c_datetimeoffset datetimeoffset
+)
+
+select * from DateTest
+
+--sinu masina kellaaeg
+select getdate() as CurrentDateTime
+
+insert into DateTest
+values (GETDATE(), GETDATE(), GETDATE(), GETDATE(), GETDATE(), GETDATE())
+
+update DateTest set c_datetimeoffset = '2026-04-07 12:13:09.6066667 +02:00'
+where c_datetimeoffset = '2026-04-07 17:13:09.6066667 +00:00'
+
+select CURRENT_TIMESTAMP, 'CURRENT_TIMESTAMP' --aja p�ring
+select SYSDATETIME(), 'SYSDATETIME()' --veel t�psem aja p�ring
+select SYSDATETIMEOFFSET(), 'SYSDATETIMEOFFSET()' --t�pne aja ja ajav��ndi p�ring
+select GETUTCDATE(), 'GETUTCDATE()' --UTC aja p�ring
+
+select isdate('asdasd') --tagastab 0, sest see ei ole kehtiv kuup�ev
+select isdate(getdate()) --tagastab 1, sest on kuup�ev
+select isdate('2026-04-07 17:13:09.6066667 +00:00') --tagastab 0 kuna mx kolm komakohta v�ib olla
+select isdate('2026-04-07 17:13:09.606') --tagastab 1
+select day(getdate()) --annab t�nase p�eva numbri
+select day('03/29/2026') --annab stringis oleva kp ja j�rjestus peab olema �ige
+select month(getdate()) --kuu
+select month('03/29/2026') --kuu
+select year(getdate()) --aasta
+select year('03/29/2026') --aasta
+
+
+--rida 841
+--tund 6
+--14.04.26
+select datename(day, '2026-04-07 12:00:05.056')--annab stringis oleva päeva nime
+select datename(weekday, '2026-04-07 12:00:05.056')--annab stringis oleva päeva nime
+select datename(month, '2026-04-07 12:00:05.056')--annab stringis oleva kuu nime
+
+create table EmployeesWithDates
+(
+	Id nvarchar(2),
+	Name nvarchar(20),
+	DateOfBirth datetime
+)
+
+INSERT INTO EmployeesWithDates (Id, Name, DateOfBirth)
+VALUES (1, 'Sam', '1980-12-30 00:00:00.000');
+INSERT INTO EmployeesWithDates (Id, Name, DateOfBirth)
+VALUES (2, 'Pam', '1982-09-01 12:02:36.260');
+INSERT INTO EmployeesWithDates (Id, Name, DateOfBirth)
+VALUES (3, 'John', '1985-08-22 12:03:30.370');
+INSERT INTO EmployeesWithDates (Id, Name, DateOfBirth)
+VALUES (4, 'Sara', '1979-11-29 12:59:30.670');
+
+--kuidas võtta ühest veerust andmeid ja selle abil luua uued veerud
+select Name, DateOfBirth, Datename(weekday, DateOfBirth) as [Day],
+		MONTH(DateOfBirth) as [Month ],
+		DATENAME(month, DateOfBirth) as [MonthName],
+		YEAR(DateOfBirth) as [Year]
+from EmployeesWithDates
+
+select DATEPART (weekday, '2026-04-07 12:00:05.056')--annab stringis oleva päeva nr, kus 1 on pühapäev
+select DATEPART(month, '2026-04-07 12:00:05.056')--annab stringis oleva kuu nr
+select DATENAME (week, '2026-04-07 12:00:05.056')
+select dateadd(day, 20, '2026-04-07 12:00:05.056')--annab stringis oleva kuupäeva, mis on 20 päeva pärast
+select dateadd(day, -20, '2026-04-07 12:00:05.056')--annab stringis oleva kuupäeva, mis on 20 päeva enne
+select datediff(month, '04/30/2025', '01/31/2026')
+select datediff(year, '104/30/2025', '01/31/2026')
+
+create function fnComputeAge (@DOB datetime)
+returns nvarchar(50)
+as begin
+	declare @tempdate datetime, @years int, @months int, @days int
+	select @tempdate = @DOB
+
+	-case when (month(@ select @years datediff(year, @tempdate, getdate()) - case when (month(@DOB)
+	= month(getdate()) and day (@DOB) > day(getdate()) then 1 else 0 end
+	select @tempdate dateadd(year, @years, @tempdate)
+
+	select @months =datediff(month,@tempdate,getdate()) - case when day (@DOB) > day(getdate()) then 1 else 0 end
+	select @tempdate = dateadd(month,@months,@tempdate)
+
+	select @days = datediff(day,@tempdate, getdate())
+
+	declare @Age nvarchar(50)
+		set @Age cast(@years as nvarchar(10)) + 'years, ' 
+		+ cast(@months as nvarchar(10)) + 'months,' 
+		+ cast(@days as nvarchar(10)) + 'day old'
+	return @Age
+end
+
+--saame vanuse välja arvutada, kui kasutame fnComputeAge funktsiooni
+select Name, DateOfBirth, dbo fnComputeAge (DateOfBirth) as Age
+from EmployeesWithDates
+
+--kui kasutame seda funktsiooni, siis saame teada tänase päeva vahet
+--stringis olevaga
+select dbo.fnComputeAge('03/23/2008')
+
+--nr peale DOB muutujat näitab,
+--et missugusena järjestuses me tahame näidata veeru sisu
+select Id, Name, DateOfBirth,
+convert(nvarchar, DateOfBirth, 126) as ConvertedDOB
+from EmployeesWithDates
+
+select Id, Name, Name + ' - ' + cast(Id as nvarchar) as [Name-Id]
+from EmployeesWithDates
+
+select cast(getdate() as date) --tänane kp
+select convert(date, getdate()) --tänane kp
+
+---matemaatilised funktsioonid
+select abs(-101.5) --absoluutväärtus, tagastab 101.5
+select ceiling (101.5) --taqastab 102, ümardab üles
+
+---matemaatilised funktsioonid
+select abs(-101.5) --absoluutväärtus, tagastab 101.5
+select ceiling (101.5) --tagastab 102, ümardab üles
+select CEILING(-101.5) --tagastab -101, ümardab üles positiivsema nr poole
+select floor (101.5) --tagastab 101, ümardab alla
+select floor(-101.5) --tagastab -102, ümardab alla negatiivsema nr poole
+select power(2, 4) -- 2 astmel 4 e 2x2x2x2, esimene nr on alus
 
